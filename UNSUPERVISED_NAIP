@@ -1,0 +1,49 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_1"),
+    newfc = ee.FeatureCollection("projects/ee-ope4/assets/newfc_points");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+// Load NAIP images
+var input = ee.ImageCollection("USDA/NAIP/DOQQ")
+                .filterDate('2023-01-01', '2023-12-31')
+                .filterBounds(region)  // filter to your imported region
+                .map(function(img){
+                  return img.clip(region); // clip each image to the study area
+                })
+                .median();  // compute median
+
+// Display region boundary
+Map.centerObject(region, 14);
+Map.addLayer(ee.Image().paint(region, 0, 2), {}, 'Region Boundary');
+
+// Sample pixels for clustering
+var training = input.sample({
+  region: region,
+  scale: 30,
+  numPixels: 5000
+});
+
+// Train the clusterer for 5 cluster groups
+var clusterer = ee.Clusterer.wekaKMeans(5).train(training);
+
+// Apply clustering
+var result = input.cluster(clusterer);
+
+// Display clusters
+Map.addLayer(result.randomVisualizer(), {}, 'Clusters');
+
+
+
+var numClusters = 5;
+
+// Define a unique color for each cluster
+var palette = ['red', 'green', 'blue', 'yellow', 'purple'];
+
+for (var i = 0; i < numClusters; i++) {
+  var clusterMask = result.eq(i);  // mask pixels equal to cluster i
+  Map.addLayer(clusterMask.updateMask(clusterMask), 
+               {palette: palette[i]}, 
+               'Cluster ' + i);
+}
+
+Map.addLayer(result, {min:0, max:numClusters-1, palette: palette}, 'Clusters Colored');
+

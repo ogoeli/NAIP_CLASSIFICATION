@@ -1,0 +1,146 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var newfc = ee.FeatureCollection("projects/ee-ope4/assets/newfc_points"),
+    region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_3");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+
+// Print all 'newfc' values
+// Keep only points inside your study area geometry
+var newfc_2 = newfc.filterBounds(region);
+
+print('Original points:', newfc.size());
+print('Filtered points:', newfc_2.size());
+Map.addLayer(newfc_2, {color: 'yellow'}, 'Filtered points inside region');
+
+
+
+// Display the sample region.
+// Center the map on your polygon
+Map.centerObject(region, 24); // The second parameter is the zoom level (1–24)
+Map.addLayer(ee.Image().paint(region, 0, 2), {}, 'region');
+
+//input your image
+var input = ee.ImageCollection("USDA/NAIP/DOQQ");
+
+// Filter NAIP images by date and bounding geometry
+var input = input.filterDate('2023-01-01', '2023-12-31').filterBounds(region)
+.median();
+
+// Clip to your study region
+var input = input.clip(region);
+
+// Visualize NAIP image
+var visParams = {bands: ['R', 'G', 'B'], min: 0, max: 255};
+Map.addLayer(input, visParams, "NAIP Image");
+
+// Display the sample region.
+// Center the map on your polygon
+Map.centerObject(region, 24); // The second parameter is the zoom level (1–24)
+Map.addLayer(ee.Image().paint(region, 0, 2), {}, 'region');
+
+
+//select bands for training
+var bands = ['R', 'G', 'B', 'N'];
+
+//This property of the table stores the land cover labels.
+var label = "cover"
+
+//Overlay the points on the imagery to get training.
+var sample = input.select(bands).sampleRegions(
+    {"collection": newfc_2, "properties": [label], "scale": 10}
+)
+
+// Adds a column of deterministic pseudorandom numbers.
+var sample = sample.randomColumn()
+
+//split your dataset
+var split = 0.7
+var training = sample.filter(ee.Filter.lt("random", split))
+var validation = sample.filter(ee.Filter.gte("random", split))
+
+//train your RF model
+var classifier = ee.Classifier.smileRandomForest(100).train(training, label, bands)
+
+
+//Classify the image with the same bands used for training.
+var classified = input.select(bands).classify(classifier)
+
+//Display the clusters with random colors.
+Map.addLayer(classified.randomVisualizer(), {}, "classified")
+
+//perform an accurancy assessment on training dataset
+var train_CM = classifier.confusionMatrix()
+var train_accurancy = train_CM.accuracy()
+print('train overall accuracy', train_accurancy);
+//print the confusionb matrix to the console
+print('confusion matrix_train', train_CM);
+
+
+//validation accurnacy
+var validated = validation.classify(classifier);
+var test_matrix = validated.errorMatrix("cover", "classification");
+var valid_accurancy = test_matrix.accuracy();
+print('validation overall accuracy', valid_accurancy);
+print('confusion matrix_validation', test_matrix);
+
+
+// Clip the already clipped image to the smaller geometry
+var finalClippedImage = classified.clip(region);
+
+// Export the single classified image for the study area
+Export.image.toDrive({
+  image: classified,
+  description: 'POLY_3',
+  folder: 'POLY_3',
+  fileNamePrefix: 'POLY_3',
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
+
+
+
+// If the export has more than 1e8 pixels, set "maxPixels" higher.
+Export.image.toAsset({
+  image: classified,
+  description: 'POLY_3_ASSET',
+  assetId: 'projects/ee-ope4/assets/POLY_3',  // <> modify these
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
+
+
+
+throw('stop')
+
+// Clip the already clipped image to the smaller geometry
+var finalClippedImage = input.clip(region);
+
+
+// Export the single raw image for the study area
+Export.image.toDrive({
+  image: finalClippedImage,
+  description: 'POLY_5',
+  folder: 'POLY_5',
+  fileNamePrefix: 'POLY_5_raw_image',
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
+
+
+
+// Export the single raw image for the study area
+Export.image.toDrive({
+  image: input,
+  description: 'POLY_5',
+  folder: 'POLY_5',
+  fileNamePrefix: 'POLY_5_raw_image',
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});

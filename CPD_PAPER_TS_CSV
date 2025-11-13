@@ -1,0 +1,102 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var pixels = ee.FeatureCollection("projects/ee-ope42/assets/monica"),
+    region = ee.FeatureCollection("projects/ee-ope42/assets/monica");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+
+
+// //input your image
+// var input = ee.ImageCollection("USDA/NAIP/DOQQ");
+
+// // Filter NAIP images by date and bounding geometry
+// var input = input.filterDate('2023-01-01', '2023-12-31').filterBounds(region)
+// .median();
+
+// // Visualize NAIP image
+// var visParams = {bands: ['R', 'G', 'B'], min: 0, max: 255};
+// Map.addLayer(input, visParams, "NAIP Image");
+
+
+// //input your image
+// // Convert image pixels to a FeatureCollection of points
+// var pixels = image.sample({
+//   region: image.geometry(),        // Area of interest
+//   scale: 3,                         // Use image native resolution (e.g., 1 for NAIP, 10/30 for others)
+//   projection: image.projection(), // Use the raster's projection
+//   geometries: true                 // Include pixel location as geometry (points)
+// });
+
+// Show some points on the map
+Map.centerObject(pixels, 15);
+Map.addLayer(pixels.limit(1000), {}, 'Raster to Points');
+
+
+// Load Sentinel-2 data and filter by date and region
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+    .filterDate('2018-01-01', '2024-12-31')
+    .filterBounds(region)
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+    //.select(["B8", "B8A", "B9", "B12"]); // Include all relevant bands
+    .select(['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A' ,'B9', 'B11', 'B12']); // Include all relevant bands
+    
+    
+// Function to extract band values for each point in the shapefile
+var extractBandValues = function(image) {
+  return pixels.map(function(feature) {
+    var values = image.reduceRegion({
+      reducer: ee.Reducer.mean(),
+      geometry: feature.geometry(),
+      scale: 30, // Sentinel-2 resolution
+      maxPixels: 1e8
+    });
+    return feature.set(values);
+  });
+};
+
+// Apply the function over the ImageCollection
+var bandValuesByClass = sentinel2.map(extractBandValues);
+
+print(bandValuesByClass, 'bandValuesByClass')
+
+// Flatten the collection for easier analysis
+var bandValuesList = bandValuesByClass.flatten();
+
+
+// Optional: Export the data for further analysis (e.g., to a CSV)
+Export.table.toDrive({
+  collection: bandValuesList,
+  description: 'Band_Values_POLY_Monica',
+  fileFormat: 'CSV',
+  folder: 'POLY_Monica'
+});
+
+
+// precipitation
+
+
+// 2. Load precipitation dataset
+var dataset = ee.ImageCollection('NOAA/CPC/Precipitation')
+                  .filter(ee.Filter.date('2018-01-01', '2024-12-31'));
+var precipitation = dataset.select('precipitation');
+
+// 3. Create a time series of mean precipitation over the study region
+var stats = precipitation.map(function(img) {
+  var meanDict = img.reduceRegion({
+    reducer: ee.Reducer.mean(),
+    geometry: region,
+    scale: 5000,    // adjust depending on your resolution needs
+    maxPixels: 1e13
+  });
+  
+  // Keep date + mean value
+  return ee.Feature(null, {
+    'date': img.date().format('YYYY-MM-dd'),
+    'precipitation': meanDict.get('precipitation')
+  });
+});
+
+// 4. Export to CSV
+Export.table.toDrive({
+  collection: stats,
+  description: 'Monica_precipitation_time_series',
+  fileFormat: 'CSV'
+});
