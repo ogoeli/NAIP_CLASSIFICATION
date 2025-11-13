@@ -1,101 +1,95 @@
 # Remote Sensing Classification and Environmental Analysis with Google Earth Engine
 
-This repository contains a Google Earth Engine (GEE) script for performing land cover classification, clustering, and environmental data extraction for a defined study region. The workflow integrates NAIP and Sentinel-2 imagery with precipitation data and allows exporting of classified and raw imagery for further analysis.
+This repository provides a Google Earth Engine (GEE) script for **land cover classification, clustering, and environmental data extraction**. The workflow focuses on forest health analysis in **Arizona, USA** using NAIP and Sentinel-2 imagery alongside precipitation data. Results can be exported for further analysis.
 
 ---
 
-## **Features**
+## Features
 
 - **NAIP Imagery Processing**
-  - Filter NAIP imagery by date and study region
-  - Clip images to a custom polygon
-  - Visualize RGB composite
+  - Filter by date and study region
+  - Clip images to custom polygon
+  - Visualize RGB composites
+
 - **Training Data Preparation**
-  - Filter points inside the study region
-  - Sample spectral values at point locations
+  - Filter points inside study region (`newfc`)
+  - Sample spectral values at points
   - Split dataset into training and validation
+
 - **Random Forest Classification**
-  - Train a Random Forest (RF) classifier using NAIP bands (R, G, B, N)
-  - Classify images and visualize clusters
-  - Compute training and validation accuracy with confusion matrices
+  - Train classifier using NAIP bands (R, G, B, N)
+  - Classify imagery and visualize clusters
+  - Compute accuracy with confusion matrices
+
 - **Clustering**
-  - Perform unsupervised clustering (K-Means) on NAIP imagery
+  - K-Means unsupervised clustering
   - Visualize clusters with unique colors
+
 - **Sentinel-2 Data Extraction**
   - Load and filter Sentinel-2 images
-  - Extract band values for points
-  - Export data for analysis (CSV)
+  - Extract band values at points
+  - Export data as CSV
+
 - **Precipitation Analysis**
   - Load NOAA CPC precipitation data
-  - Compute mean precipitation over the study region
-  - Export time series for environmental analysis
+  - Compute mean precipitation over study region
+  - Export time series
+
 - **Export Options**
-  - Export classified images to Google Drive and Earth Engine assets
-  - Export raw and processed imagery for further analysis
+  - Export classified and raw images to Google Drive or GEE assets
+  - Export tabular datasets for further analysis
 
 ---
 
-## **Workflow Overview**
+## Workflow Overview
 
-1. **Define Study Region**
-   - Input your polygon geometry for the area of interest.
-2. **Prepare Sample Points**
-   - Filter and overlay training points (`newfc`) on the imagery.
-3. **Image Preparation**
-   - Load NAIP imagery, clip to study area, and compute median.
-   - Optional: Load Sentinel-2 for additional band features.
-4. **Training and Classification**
-   - Sample regions and split into training/validation.
-   - Train Random Forest classifier and classify the image.
-   - Perform accuracy assessment with confusion matrices.
-5. **Clustering**
-   - Apply K-Means clustering to identify unsupervised groups.
-6. **Environmental Analysis**
-   - Extract precipitation time series for the study area.
-7. **Export**
-   - Export classified and raw images to Google Drive or GEE assets.
-   - Export tabular datasets (CSV) for further analysis.
+1. **Define Study Region** – Input a polygon geometry.
+2. **Prepare Sample Points** – Filter and overlay training points (`newfc`).
+3. **Image Preparation** – Load NAIP imagery, clip, and compute median composite. Optional: load Sentinel-2 imagery.
+4. **Training & Classification** – Sample regions, train Random Forest, classify images, and assess accuracy.
+5. **Clustering** – Apply K-Means to identify unsupervised groups.
+6. **Environmental Analysis** – Extract precipitation time series.
+7. **Export Results** – Save images and CSVs to Drive or GEE assets.
 
 ---
 
-## **Usage**
+## Usage
 
 1. Clone the repository.
 2. Open [Google Earth Engine Code Editor](https://code.earthengine.google.com/).
-3. Paste the script and define your `region` and `newfc` FeatureCollection.
-4. Run the script step by step in the console.
-5. Export results to Drive or Asset as needed.
+3. Paste the script and define `region` and `newfc` FeatureCollection.
+4. Run the script step by step.
+5. Export results to Drive or GEE asset as needed.
 
 ---
 
-## **Dependencies**
+## Dependencies
 
 - [Google Earth Engine](https://earthengine.google.com/)
-- NAIP and Sentinel-2 imagery
+- NAIP imagery
+- Sentinel-2 imagery
 - NOAA CPC precipitation dataset
 
 ---
 
-## **Example Visualizations**
+## Example Visualizations
 
 - Classified land cover map
-- Clusters of NAIP imagery
+- NAIP image clusters
 - Precipitation time series over study region
-- Exported CSVs for band values and environmental metrics
+- Exported CSVs for spectral and environmental metrics
 
 ---
 
-## **Notes**
+## Notes
 
-- Adjust the `scale` and `maxPixels` parameters based on the resolution and size of your study area.
-- Ensure your training points (`newfc`) are correctly filtered within the study region.
-- `newfc` is the training points, you can inport as an assest to GEE or manually select your training points.
-- Random Forest parameters can be tuned for better classification accuracy.
+- Adjust `scale` and `maxPixels` based on study area size.
+- Ensure training points (`newfc`) are within the study region.
+- `newfc` can be imported as a GEE asset or manually selected.
+- Random Forest parameters can be tuned for better accuracy.
 
 ---
 
-## **License**
+## License
 
 MIT License
-
-
