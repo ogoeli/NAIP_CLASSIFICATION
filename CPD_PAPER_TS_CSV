@@ -1,6 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var pixels = ee.FeatureCollection("projects/ee-ope42/assets/monica"),
-    region = ee.FeatureCollection("projects/ee-ope42/assets/monica");
+var region = ee.FeatureCollection("projects/ee-ope42/assets/monica");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 
 
@@ -16,14 +15,14 @@ var pixels = ee.FeatureCollection("projects/ee-ope42/assets/monica"),
 // Map.addLayer(input, visParams, "NAIP Image");
 
 
-// //input your image
-// // Convert image pixels to a FeatureCollection of points
-// var pixels = image.sample({
-//   region: image.geometry(),        // Area of interest
-//   scale: 3,                         // Use image native resolution (e.g., 1 for NAIP, 10/30 for others)
-//   projection: image.projection(), // Use the raster's projection
-//   geometries: true                 // Include pixel location as geometry (points)
-// });
+//input your image
+// Convert image pixels to a FeatureCollection of points
+var pixels = image.sample({
+  region: image.geometry(),        // Area of interest
+  scale: 10,                         // Use image native resolution (e.g., 1 for NAIP, 10/30 for others)
+  projection: image.projection(), // Use the raster's projection
+  geometries: true                 // Include pixel location as geometry (points)
+});
 
 // Show some points on the map
 Map.centerObject(pixels, 15);
@@ -64,9 +63,9 @@ var bandValuesList = bandValuesByClass.flatten();
 // Optional: Export the data for further analysis (e.g., to a CSV)
 Export.table.toDrive({
   collection: bandValuesList,
-  description: 'Band_Values_POLY_Monica',
+  description: 'Band_Values_POLY_3',
   fileFormat: 'CSV',
-  folder: 'POLY_Monica'
+  folder: 'POLY_3'
 });
 
 

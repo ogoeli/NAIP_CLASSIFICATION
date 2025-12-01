@@ -1,7 +1,133 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var newfc = ee.FeatureCollection("projects/ee-ope4/assets/newfc_points"),
-    region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_3");
+    region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_1");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
+
+
+// ----------------------------
+// Setup
+// ----------------------------
+
+// Input points (your land cover labels)
+var newfc_2 = newfc.filterBounds(region);
+
+print('Original points:', newfc.size());
+print('Filtered points:', newfc_2.size());
+Map.addLayer(newfc_2, {color: 'yellow'}, 'Filtered points inside region');
+
+// Display the sample region
+Map.centerObject(region, 24);
+Map.addLayer(ee.Image().paint(region, 0, 2), {}, 'region');
+
+// Input NAIP imagery
+var input = ee.ImageCollection("USDA/NAIP/DOQQ")
+              .filterDate('2023-01-01', '2023-12-31')
+              .filterBounds(region)
+              .median()
+              .clip(region);
+
+// Visualize NAIP image
+var visParams = {bands: ['R', 'G', 'B'], min: 0, max: 255};
+Map.addLayer(input, visParams, "NAIP Image");
+
+// ----------------------------
+// Sample points for training
+// ----------------------------
+var bands = ['R', 'G', 'B', 'N'];  // bands to use
+var label = 'cover';                // land cover label
+
+// Extract pixel values at points
+var sample = input.select(bands).sampleRegions({
+  collection: newfc_2,
+  properties: [label],
+  scale: 10
+});
+
+// Add a random column for splitting
+sample = sample.randomColumn('random');
+
+// ----------------------------
+// Split dataset: train, validation, test
+// ----------------------------
+var trainSplit = 0.6;  // 60% train
+var validSplit = 0.2;  // 20% validation
+var testSplit = 0.2;   // 20% test
+
+var training = sample.filter(ee.Filter.lt('random', trainSplit));
+var validation = sample.filter(
+  ee.Filter.and(
+    ee.Filter.gte('random', trainSplit),
+    ee.Filter.lt('random', trainSplit + validSplit)
+  )
+);
+var test = sample.filter(ee.Filter.gte('random', trainSplit + validSplit));
+
+print('Training size:', training.size());
+print('Validation size:', validation.size());
+print('Test size:', test.size());
+
+// ----------------------------
+// Train Random Forest Classifier
+// ----------------------------
+var classifier = ee.Classifier.smileRandomForest(1000)
+                      .train(training, label, bands);
+
+// ----------------------------
+// Classify the image
+// ----------------------------
+var classified = input.select(bands).classify(classifier);
+Map.addLayer(classified.randomVisualizer(), {}, 'Classified Image');
+
+// ----------------------------
+// Accuracy assessment
+// ----------------------------
+
+// Training accuracy
+var train_CM = classifier.confusionMatrix();
+print('Training overall accuracy:', train_CM.accuracy());
+print('Training confusion matrix:', train_CM);
+
+// Validation accuracy
+var validated = validation.classify(classifier);
+var validationMatrix = validated.errorMatrix(label, 'classification');
+print('Validation overall accuracy:', validationMatrix.accuracy());
+print('Validation confusion matrix:', validationMatrix);
+
+// Test accuracy (final, unbiased)
+var tested = test.classify(classifier);
+var testMatrix = tested.errorMatrix(label, 'classification');
+print('Test overall accuracy:', testMatrix.accuracy());
+print('Test confusion matrix:', testMatrix);
+
+// ----------------------------
+// Export classified image
+// ----------------------------
+Export.image.toDrive({
+  image: classified,
+  description: 'POLY_1',
+  folder: 'POLY_1',
+  fileNamePrefix: 'POLY_1_classified',
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
+
+Export.image.toAsset({
+  image: classified,
+  description: 'POLY_1_ASSET',
+  assetId: 'projects/ee-ope4/assets/POLY_1',
+  region: region,
+  scale: 0.6,
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
+
+
+
+
+throw('stop')
 
 // Print all 'newfc' values
 // Keep only points inside your study area geometry
@@ -58,7 +184,7 @@ var training = sample.filter(ee.Filter.lt("random", split))
 var validation = sample.filter(ee.Filter.gte("random", split))
 
 //train your RF model
-var classifier = ee.Classifier.smileRandomForest(100).train(training, label, bands)
+var classifier = ee.Classifier.smileRandomForest(1000).train(training, label, bands)
 
 
 //Classify the image with the same bands used for training.
@@ -89,9 +215,9 @@ var finalClippedImage = classified.clip(region);
 // Export the single classified image for the study area
 Export.image.toDrive({
   image: classified,
-  description: 'POLY_3',
-  folder: 'POLY_3',
-  fileNamePrefix: 'POLY_3',
+  description: 'POLY_1',
+  folder: 'POLY_1',
+  fileNamePrefix: 'POLY_1',
   region: region,
   scale: 0.6,
   crs: 'EPSG:4326',
@@ -103,8 +229,8 @@ Export.image.toDrive({
 // If the export has more than 1e8 pixels, set "maxPixels" higher.
 Export.image.toAsset({
   image: classified,
-  description: 'POLY_3_ASSET',
-  assetId: 'projects/ee-ope4/assets/POLY_3',  // <> modify these
+  description: 'POLY_1_ASSET',
+  assetId: 'projects/ee-ope4/assets/POLY_1',  // <> modify these
   region: region,
   scale: 0.6,
   crs: 'EPSG:4326',
