@@ -1,9 +1,14 @@
+<<<<<<< HEAD
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var newfc = ee.FeatureCollection("projects/ee-ope4/assets/newfc_points"),
     region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_1");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-
-
+=======
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var newfc = ee.FeatureCollection("projects/ee-ope4/assets/newfc_points"),
+    region = ee.FeatureCollection("projects/ee-ope42/assets/POLY_3");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+>>>>>>> 555eea9464ac65ab4b3e8734bf694001c3d2928e
 
 // ----------------------------
 // Setup
@@ -105,9 +110,9 @@ print('Test confusion matrix:', testMatrix);
 // ----------------------------
 Export.image.toDrive({
   image: classified,
-  description: 'POLY_1',
-  folder: 'POLY_1',
-  fileNamePrefix: 'POLY_1_classified',
+  description: 'POLY_3',
+  folder: 'POLY_3',
+  fileNamePrefix: 'POLY_3_classified',
   region: region,
   scale: 0.6,
   crs: 'EPSG:4326',
@@ -116,8 +121,8 @@ Export.image.toDrive({
 
 Export.image.toAsset({
   image: classified,
-  description: 'POLY_1_ASSET',
-  assetId: 'projects/ee-ope4/assets/POLY_1',
+  description: 'POLY_3_ASSET',
+  assetId: 'projects/ee-ope4/assets/POLY_3',
   region: region,
   scale: 0.6,
   crs: 'EPSG:4326',
